@@ -2,10 +2,16 @@
 // projects/integer/Integer.h
 // Copyright (C) 2013
 // Glenn P. Downing
+// worked by Ka Seng Chou
 // --------------------------
 
 #ifndef Integer_h
-#define Integer_h
+    #define Integer_h
+#endif
+
+#ifdef NDEBUG
+    #define NDEBUG
+#endif
 
 // --------
 // includes
@@ -16,6 +22,12 @@
 #include <stdexcept> // invalid_argument
 #include <string>    // string
 #include <vector>    // vector
+#include <algorithm> //different algorithms for iterators
+#include <iterator>  //iterator categories, iterator functions
+#include <functional>//plus<>
+//#include <cstdlib>   //abs
+
+using namespace std;
 
 // -----------------
 // shift_left_digits
@@ -27,13 +39,16 @@
  * @param x an iterator to the beginning of an output sequence (inclusive)
  * @return  an iterator to the end       of an output sequence (exclusive)
  * the sequences are of decimal digits
- * output the shift left of the input sequence into the output sequence
+ * coutput the shift left of the input sequence into the output sequence
  * ([b, e) << n) => x
  */
 template <typename II, typename OI>
-OI shift_left_digits (II b, II e, int n, OI x) {
-    // <your code>
-    return x;}
+OI shift_left_digits (II b, II e, int n, OI x) 
+{
+    //copy integers from b (excluded e) to x, then fill the end of x with n 0s, and advance x by n
+    advance(fill_n(copy(b, e, x), n, 0), n);
+    return x;
+}
 
 // ------------------
 // shift_right_digits
@@ -49,9 +64,10 @@ OI shift_left_digits (II b, II e, int n, OI x) {
  * ([b, e) >> n) => x
  */
 template <typename II, typename OI>
-OI shift_right_digits (II b, II e, int n, OI x) {
-    // <your code>
-    return x;}
+OI shift_right_digits (II b, II e, int n, OI x) 
+{
+     return copy_n(b, distance(b, e) - n, x);
+}
 
 // -----------
 // plus_digits
@@ -69,9 +85,30 @@ OI shift_right_digits (II b, II e, int n, OI x) {
  * ([b1, e1) + [b2, e2)) => x
  */
 template <typename II1, typename II2, typename OI>
-OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) {
-    // <your code>
-    return x;}
+OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
+{
+    if((*b1 + *b2) > 10)
+    {
+        *x = 0;
+        ++x;
+    }
+    int II1_length = distance(b1, e1);
+    int II2_length = distance(b2, e2);
+    typename OI x_end;
+    if(II1_length > II2_length)
+    {
+        x_end = copy_n(b1, II1_length - II2_length, x);
+        advance(b1, II1_length - II2_length);
+        x_end = transform(b1, e1, b2, x_end, plus<int>());
+    }
+    else
+    {
+        x_end = copy_n(b2, II2_length - II1_length, x);
+        advance(b2, II2_length - II1_length);
+        x_end = transform(b1, e1, b2, x_end, plus<int>());
+    }
+    return transform(x, );
+}
 
 // ------------
 // minus_digits

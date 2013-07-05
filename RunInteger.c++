@@ -31,6 +31,8 @@ To document the program:
 
 #include "Integer.h"
 
+#define NDEBUG
+
 // ----
 // main
 // ----
