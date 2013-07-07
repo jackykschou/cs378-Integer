@@ -23,9 +23,7 @@
 #include <string>    // string
 #include <vector>    // vector
 #include <algorithm> //different algorithms for iterators
-#include <iterator>  //iterator categories, iterator functions
-#include <functional>//plus<>
-//#include <cstdlib>   //abs
+#include <iterator>  //predefined iterator, iterator categories, iterator functions
 
 using namespace std;
 
@@ -43,10 +41,11 @@ using namespace std;
  * ([b, e) << n) => x
  */
 template <typename II, typename OI>
-OI shift_left_digits (II b, II e, int n, OI x) 
+typename OI shift_left_digits (II b, II e, int n, OI x) 
 {
-    //copy integers from b (excluded e) to x, then fill the end of x with n 0s, and advance x by n
-    advance(fill_n(copy(b, e, x), n, 0), n);
+    x = copy(b, e, x);
+    fill_n(x, n, 0);
+    advance(x, n);
     return x;
 }
 
@@ -58,13 +57,13 @@ OI shift_left_digits (II b, II e, int n, OI x)
  * @param b an iterator to the beginning of an input  sequence (inclusive)
  * @param e an iterator to the end       of an input  sequence (exclusive)
  * @param x an iterator to the beginning of an output sequence (inclusive)
- * @return  an iterator to the end       of an output sequence (exclusive)
+ * @return  an iterator to the end       of an output sequence (exclusive) or return x (with nothing new filled with) if all digits are shifted away
  * the sequences are of decimal digits
  * output the shift right of the input sequence into the output sequence
  * ([b, e) >> n) => x
  */
 template <typename II, typename OI>
-OI shift_right_digits (II b, II e, int n, OI x) 
+typename OI shift_right_digits (II b, II e, int n, OI x) 
 {
      return copy_n(b, distance(b, e) - n, x);
 }
@@ -79,35 +78,55 @@ OI shift_right_digits (II b, II e, int n, OI x)
  * @param b2 an iterator to the beginning of an input  sequence (inclusive)
  * @param e2 an iterator to the end       of an input  sequence (exclusive)
  * @param x  an iterator to the beginning of an output sequence (inclusive)
- * @return   an iterator to the end       of an output sequence (exclusive)
+ * @return   an iterator to the end       of an output sequence (exclusive) 
  * the sequences are of decimal digits
  * output the sum of the two input sequences into the output sequence
  * ([b1, e1) + [b2, e2)) => x
  */
 template <typename II1, typename II2, typename OI>
-OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
+typename OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
-    if((*b1 + *b2) > 10)
-    {
-        *x = 0;
-        ++x;
-    }
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
-    typename OI x_end;
+    vector<int> temp(1);
+
     if(II1_length > II2_length)
     {
-        x_end = copy_n(b1, II1_length - II2_length, x);
+        copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
         advance(b1, II1_length - II2_length);
-        x_end = transform(b1, e1, b2, x_end, plus<int>());
+        transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
+            {
+                return elem1 + elem2;
+            });
     }
     else
     {
-        x_end = copy_n(b2, II2_length - II1_length, x);
+        copy_n(b2, II2_length - II1_length, back_insert_iterator(temp));
         advance(b2, II2_length - II1_length);
-        x_end = transform(b1, e1, b2, x_end, plus<int>());
+        transform(b2, e2, b1, back_insert_iterator(temp), [](int elem1, int elem2)
+            {
+                return elem1 + elem2;
+            });
     }
-    return transform(x, );
+    vector<int>::reverse_iterator rit = next(temp.rbegin());
+    for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
+        {
+            if(elem >= 10)
+            {
+                elem -= 10;
+                ++(*rit);
+            }
+            ++rit;
+        });
+    if(temp[0] == 1)
+    {
+        return copy(temp.cbegin(), temp.cend(), x);
+    }
+    else
+    {
+        return copy(next(temp.cbegin()), temp.cend(), x);
+    }
+
 }
 
 // ------------
@@ -120,15 +139,43 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
  * @param b2 an iterator to the beginning of an input  sequence (inclusive)
  * @param e2 an iterator to the end       of an input  sequence (exclusive)
  * @param x  an iterator to the beginning of an output sequence (inclusive)
- * @return   an iterator to the end       of an output sequence (exclusive)
+ * @return   an iterator to the end       of an output sequence (exclusive) or return x (with nothing new filled with) if the result is 0
  * the sequences are of decimal digits
  * output the difference of the two input sequences into the output sequence
  * ([b1, e1) - [b2, e2)) => x
  */
 template <typename II1, typename II2, typename OI>
-OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) {
-    // <your code>
-    return x;}
+OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
+{
+    int II1_length = distance(b1, e1);
+    int II2_length = distance(b2, e2);
+    vector<int> temp;
+
+    copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
+    advance(b1, II1_length - II2_length);
+    transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
+        {
+            return elem1 - elem2;
+        });
+    vector<int>::reverse_iterator rit = next(temp.rbegin());
+    for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
+        {
+            if(elem < 0)
+            {
+                elem += 10;
+                --(*rit);
+            }
+            ++rit;
+        });
+    if(find(temp.cbegin(), temp.cend(), 0) == prev(temp.end()))
+    {
+        return x;
+    }
+    else
+    {
+        return copy(next(find(temp.cbegin(), temp.cend()), 0) , temp.cend(), x);
+    }
+}
 
 // -----------------
 // multiplies_digits
@@ -139,16 +186,56 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) {
  * @param e  an iterator to the end       of an input  sequence (exclusive)
  * @param b2 an iterator to the beginning of an input  sequence (inclusive)
  * @param e2 an iterator to the end       of an input  sequence (exclusive)
- * @param x  an iterator to the beginning of an output sequence (inclusive)
+ * @param x  an iterator to the beginning of an output sequence (inclusive) 
  * @return   an iterator to the end       of an output sequence (exclusive)
  * the sequences are of decimal digits
  * output the product of the two input sequences into the output sequence
  * ([b1, e1) * [b2, e2)) => x
  */
 template <typename II1, typename II2, typename OI>
-OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) {
-    // <your code>
-    return x;}
+OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
+{
+    int II1_length = distance(b1, e1);
+    int II2_length = distance(b2, e2);
+    vector<int> temp(1);
+
+    if(II1_length > II2_length)
+    {
+        copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
+        advance(b1, II1_length - II2_length);
+        transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
+            {
+                return elem1 + elem2;
+            });
+    }
+    else
+    {
+        copy_n(b2, II2_length - II1_length, back_insert_iterator(temp));
+        advance(b2, II2_length - II1_length);
+        transform(b2, e2, b1, back_insert_iterator(temp), [](int elem1, int elem2)
+            {
+                return elem1 + elem2;
+            });
+    }
+    vector<int>::reverse_iterator rit = next(temp.rbegin());
+    for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
+        {
+            if(elem >= 10)
+            {
+                elem -= 10;
+                ++(*rit);
+            }
+            ++rit;
+        });
+    if(temp[0] == 1)
+    {
+        return copy(temp.cbegin(), temp.cend(), x);
+    }
+    else
+    {
+        return copy(next(temp.cbegin()), temp.cend(), x);
+    }
+}
 
 // --------------
 // divides_digits
