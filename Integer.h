@@ -44,9 +44,7 @@ template <typename II, typename OI>
 typename OI shift_left_digits (II b, II e, int n, OI x) 
 {
     x = copy(b, e, x);
-    fill_n(x, n, 0);
-    advance(x, n);
-    return x;
+    return fill_n(x, n, 0);
 }
 
 // ------------------
@@ -92,6 +90,7 @@ typename OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 
     if(II1_length > II2_length)
     {
+        temp.reserve(II1_length + 1);
         copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
         advance(b1, II1_length - II2_length);
         transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
@@ -101,6 +100,7 @@ typename OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     }
     else
     {
+        temp.reserve(II2_length + 1);
         copy_n(b2, II2_length - II1_length, back_insert_iterator(temp));
         advance(b2, II2_length - II1_length);
         transform(b2, e2, b1, back_insert_iterator(temp), [](int elem1, int elem2)
@@ -150,6 +150,7 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
     vector<int> temp;
+    temp.reserve(II1_length);
 
     copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
     advance(b1, II1_length - II2_length);
@@ -197,44 +198,40 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 {
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
-    vector<int> temp(1);
+    vector<int> result(1);
+    vector<int> multiplicand;
+    vector<int>::iterator result_end = result.end();
+    vector<int>::iterator multiplicand_end;
+    result.reserve(II1_length + II2_length);
+    multiplicand.reserve(II1_length + II2_length - 1);
 
     if(II1_length > II2_length)
     {
-        copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
-        advance(b1, II1_length - II2_length);
-        transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
+        result_end = copy(b1, e1, result.begin());
+        multiplicand_end =  copy(b1, e1, multiplicand.begin());
+        for_each(b2, e2, [&II2_length, &multiplicand, &multiplicand_end](int elem)
             {
-                return elem1 + elem2;
-            });
-    }
-    else
-    {
-        copy_n(b2, II2_length - II1_length, back_insert_iterator(temp));
-        advance(b2, II2_length - II1_length);
-        transform(b2, e2, b1, back_insert_iterator(temp), [](int elem1, int elem2)
-            {
-                return elem1 + elem2;
-            });
-    }
-    vector<int>::reverse_iterator rit = next(temp.rbegin());
-    for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
-        {
-            if(elem >= 10)
-            {
-                elem -= 10;
-                ++(*rit);
+                vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II2_length, 0);
+                while(elem-- != 0)
+                {
+                    result_end = plus_digits(result.begin(), result_end, multiplicand.begin(), multiplicand_temp_end, result.begin());
+                }
             }
-            ++rit;
-        });
-    if(temp[0] == 1)
-    {
-        return copy(temp.cbegin(), temp.cend(), x);
     }
     else
     {
-        return copy(next(temp.cbegin()), temp.cend(), x);
+        result_end = copy(b2, e2, result.begin());
+        multiplicand_end =  copy(b1, e1, multiplicand.begin());
+        for_each(b1, e1, [&II1_length, &multiplicand, &multiplicand_end](int elem)
+            {
+                vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II1_length, 0);
+                while(elem-- != 0)
+                {
+                    result_end = plus_digits(result.begin(), result_end, multiplicand.begin(), multiplicand_temp_end, result.begin());
+                }
+            }
     }
+    return copy(result.begin(), result_end, x);    
 }
 
 // --------------
@@ -253,9 +250,38 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
  * ([b1, e1) / [b2, e2)) => x
  */
 template <typename II1, typename II2, typename OI>
-OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) {
-    // <your code>
-    return x;}
+OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
+{
+    int II1_length = distance(b1, e1);
+    int II2_length = distance(b2, e2);
+    vector<int> result(1);
+    vector<int> dividend(b1, e1);
+    vector<int> result_add_one(1, 1);
+    vector<int>::iterator result_end = result.end();
+    vector<int>::iterator dividend_end = dividend.end();
+    result.reserve(II1_length);
+
+    if(II1_length - II2_length >= 2 || ((II1_length - II2_length == 1) && (*b1 > *b2)))
+    {
+        vector<int> divider(b2, e2);
+        vector<int> result_adder(1, 1);
+        divider.reserve(II2_length + II1_length);
+        result_adder.reserve(1 + II1_length - II2_length);
+
+        dividend_end = minus_digits(dividend.begin(), dividend_end, divider.begin(), fill_n(divider.end(), II1_length - II2_length, 0), dividend.begin());
+        result_end = plus_digits(result.begin(), result_end, result_adder.begin(), fill_n(result_adder.end(), II1_length - II2_length, 0), result.begin());
+
+    }
+
+
+    while(lexicographical_compare(b2, e2, dividend.begin(), dividend_end) || ((distance(dividend.begin(), dividend_end) == distance(b2, e2)) && equal(dividend.begin(), dividend_end, b2)))
+    {
+        dividend_end = minus_digits(dividend.begin(), dividend_end, b2, e2, dividend.begin());
+        result_end = plus_digits(result.begin(), result_end, result_add_one.begin(), result_add_one.end(), result.begin());
+    }
+
+    return copy(result.begin(), result_end, x);
+}
 
 // -------
 // Integer
@@ -281,8 +307,10 @@ class Integer {
     /**
      * <your documentation>
      */
-    friend bool operator != (const Integer& lhs, const Integer& rhs) {
-        return !(lhs == rhs);}
+    friend bool operator != (const Integer& lhs, const Integer& rhs) 
+    {
+        return !(lhs == rhs);
+    }
 
     // ----------
     // operator <
