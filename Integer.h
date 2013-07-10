@@ -5,13 +5,18 @@
 // worked by Ka Seng Chou
 // --------------------------
 
+// --------
+// defines
+// --------
+
 #ifndef Integer_h
     #define Integer_h
-#endif
 
-#ifdef NDEBUG
-    #define NDEBUG
-#endif
+//#ifdef NDEBUG
+    //#define NDEBUG
+//#endif
+
+#define ZERO_ASCII_OFFSET 48
 
 // --------
 // includes
@@ -20,8 +25,9 @@
 #include <cassert>   // assert
 #include <iostream>  // ostream
 #include <stdexcept> // invalid_argument
-#include <string>    // string
+#include <string>    // string, stoi, to_string
 #include <vector>    // vector
+#include <deque>     // deque
 #include <algorithm> //different algorithms for iterators
 #include <iterator>  //predefined iterator, iterator categories, iterator functions
 
@@ -41,7 +47,7 @@ using namespace std;
  * ([b, e) << n) => x
  */
 template <typename II, typename OI>
-typename OI shift_left_digits (II b, II e, int n, OI x) 
+OI shift_left_digits (II b, II e, int n, OI x) 
 {
     x = copy(b, e, x);
     return fill_n(x, n, 0);
@@ -61,7 +67,7 @@ typename OI shift_left_digits (II b, II e, int n, OI x)
  * ([b, e) >> n) => x
  */
 template <typename II, typename OI>
-typename OI shift_right_digits (II b, II e, int n, OI x) 
+OI shift_right_digits (II b, II e, int n, OI x) 
 {
      return copy_n(b, distance(b, e) - n, x);
 }
@@ -82,7 +88,7 @@ typename OI shift_right_digits (II b, II e, int n, OI x)
  * ([b1, e1) + [b2, e2)) => x
  */
 template <typename II1, typename II2, typename OI>
-typename OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
+OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
@@ -91,9 +97,9 @@ typename OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     if(II1_length > II2_length)
     {
         temp.reserve(II1_length + 1);
-        copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
+        copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(temp));
         advance(b1, II1_length - II2_length);
-        transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
+        transform(b1, e1, b2, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
             {
                 return elem1 + elem2;
             });
@@ -101,9 +107,9 @@ typename OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     else
     {
         temp.reserve(II2_length + 1);
-        copy_n(b2, II2_length - II1_length, back_insert_iterator(temp));
+        copy_n(b2, II2_length - II1_length, back_insert_iterator<vector<int> >(temp));
         advance(b2, II2_length - II1_length);
-        transform(b2, e2, b1, back_insert_iterator(temp), [](int elem1, int elem2)
+        transform(b2, e2, b1, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
             {
                 return elem1 + elem2;
             });
@@ -152,9 +158,9 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     vector<int> temp;
     temp.reserve(II1_length);
 
-    copy_n(b1, II1_length - II2_length, back_insert_iterator(temp));
+    copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(temp));
     advance(b1, II1_length - II2_length);
-    transform(b1, e1, b2, back_insert_iterator(temp), [](int elem1, int elem2)
+    transform(b1, e1, b2, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
         {
             return elem1 - elem2;
         });
@@ -174,7 +180,7 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     }
     else
     {
-        return copy(next(find(temp.cbegin(), temp.cend()), 0) , temp.cend(), x);
+        return copy(next(find(temp.cbegin(), temp.cend(), 0)), temp.cend(), x);
     }
 }
 
@@ -209,27 +215,27 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     {
         result_end = copy(b1, e1, result.begin());
         multiplicand_end =  copy(b1, e1, multiplicand.begin());
-        for_each(b2, e2, [&II2_length, &multiplicand, &multiplicand_end](int elem)
+        for_each(b2, e2, [&II2_length, &multiplicand, &multiplicand_end, &result_end, &result](int elem)
             {
                 vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II2_length, 0);
                 while(elem-- != 0)
                 {
                     result_end = plus_digits(result.begin(), result_end, multiplicand.begin(), multiplicand_temp_end, result.begin());
                 }
-            }
+            });
     }
     else
     {
         result_end = copy(b2, e2, result.begin());
         multiplicand_end =  copy(b1, e1, multiplicand.begin());
-        for_each(b1, e1, [&II1_length, &multiplicand, &multiplicand_end](int elem)
+        for_each(b1, e1, [&II1_length, &multiplicand, &multiplicand_end, &result_end, &result](int elem)
             {
                 vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II1_length, 0);
                 while(elem-- != 0)
                 {
                     result_end = plus_digits(result.begin(), result_end, multiplicand.begin(), multiplicand_temp_end, result.begin());
                 }
-            }
+            });
     }
     return copy(result.begin(), result_end, x);    
 }
@@ -252,32 +258,38 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template <typename II1, typename II2, typename OI>
 OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
-    int II1_length = distance(b1, e1);
-    int II2_length = distance(b2, e2);
+    int dividend_len = distance(b1, e1);
+    int divider_len = distance(b2, e2);
     vector<int> result(1);
     vector<int> dividend(b1, e1);
-    vector<int> result_add_one(1, 1);
+    vector<int> divider(divider_len + dividend_len - divider_len);
+    vector<int> result_adder(1 + dividend_len - divider_len);
     vector<int>::iterator result_end = result.end();
     vector<int>::iterator dividend_end = dividend.end();
-    result.reserve(II1_length);
+    vector<int>::iterator divider_end = divider.end();
+    vector<int>::iterator result_adder_end = result_adder.end();
+    result.reserve(dividend_len);
 
-    if(II1_length - II2_length >= 2 || ((II1_length - II2_length == 1) && (*b1 > *b2)))
+    result_adder[0] = 1;
+    divider_end = copy(b2, e2, divider.begin());
+
+    while(dividend_len - divider_len >= 2 || ((dividend_len - divider_len == 1) && (dividend.front() > divider.front())))
     {
-        vector<int> divider(b2, e2);
-        vector<int> result_adder(1, 1);
-        divider.reserve(II2_length + II1_length);
-        result_adder.reserve(1 + II1_length - II2_length);
+        divider_end = next(divider.begin(), distance(b2, e2) + dividend_len - divider_len + 1);
+        result_adder_end = next(result_adder.begin(), dividend_len - divider_len + 1);
+        dividend_end = minus_digits(dividend.begin(), dividend_end, divider.begin(), divider_end, dividend.begin());
+        result_end = plus_digits(result.begin(), result_end, result_adder.begin(), result_adder_end, result.begin());
 
-        dividend_end = minus_digits(dividend.begin(), dividend_end, divider.begin(), fill_n(divider.end(), II1_length - II2_length, 0), dividend.begin());
-        result_end = plus_digits(result.begin(), result_end, result_adder.begin(), fill_n(result_adder.end(), II1_length - II2_length, 0), result.begin());
-
+        dividend_len = distance(dividend.begin(), dividend_end);
+        divider_len = distance(divider.begin(), divider_end);
     }
 
+    result_adder_end = next(result_adder.begin());
 
     while(lexicographical_compare(b2, e2, dividend.begin(), dividend_end) || ((distance(dividend.begin(), dividend_end) == distance(b2, e2)) && equal(dividend.begin(), dividend_end, b2)))
     {
         dividend_end = minus_digits(dividend.begin(), dividend_end, b2, e2, dividend.begin());
-        result_end = plus_digits(result.begin(), result_end, result_add_one.begin(), result_add_one.end(), result.begin());
+        result_end = plus_digits(result.begin(), result_end, result_adder.begin(), result_adder_end, result.begin());
     }
 
     return copy(result.begin(), result_end, x);
@@ -288,24 +300,32 @@ OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 // -------
 
 template < typename T, typename C = std::vector<T> >
-class Integer {
+class Integer 
+{
     // -----------
     // operator ==
     // -----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer on the left side of the ==
+     * @param rhs an Integer on the right side of the ==
+     * @return bool to indicate whether the two Integers are equal or not
+     * equal comparison operator for Integer
      */
-    friend bool operator == (const Integer& lhs, const Integer& rhs) {
-        // <your code>
-        return false;}
+    friend bool operator == (const Integer& lhs, const Integer& rhs) 
+    {
+        return (lhs.negative == rhs.negative) && (distance(lhs.begin_pos, lhs.end_pos) == distance(rhs.begin_pos, rhs.end_pos)) && equal(lhs.begin_pos, lhs.end_pos, rhs.begin_pos);
+    }
 
     // -----------
     // operator !=
     // -----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer on the left side of the !=
+     * @param rhs an Integer on the right side of the !=
+     * @return bool to indicate whether the two Integers are NOT equal or not
+     * not equal comparison operator for Integer
      */
     friend bool operator != (const Integer& lhs, const Integer& rhs) 
     {
@@ -317,126 +337,222 @@ class Integer {
     // ----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer on the left side of <
+     * @param rhs an Integer on the right side of <
+     * @return bool to indicate whether the Integer on the left side is smaller than that on the right side
+     * smaller comparison operator for Integer
      */
-    friend bool operator < (const Integer& lhs, const Integer& rhs) {
-        // <your code>
-        return false;}
+    friend bool operator < (const Integer& lhs, const Integer& rhs) 
+    {
+        if(lhs.negative && !rhs.negative)
+        {
+            return true;
+        }
+        else if(!lhs.negative && rhs.negative)
+        {
+            return false;
+        }
+        else if(lhs.negative && rhs.negative)
+        {
+            return lexicographical_compare(rhs.begin_pos, rhs.end_pos, lhs.begin_pos, lhs.end_pos);
+        }
+        else
+        {
+            return lexicographical_compare(lhs.begin_pos, lhs.end_pos, rhs.begin_pos, rhs.end_pos);
+        }
+    }
 
     // -----------
     // operator <=
     // -----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer on the left side of <=
+     * @param rhs an Integer on the right side of <=
+     * @return bool to indicate whether the Integer on the left side is smaller or equal to that on the right side
+     * smaller or equal comparison operator for Integer
      */
-    friend bool operator <= (const Integer& lhs, const Integer& rhs) {
-        return !(rhs < lhs);}
+    friend bool operator <= (const Integer& lhs, const Integer& rhs) 
+    {
+        return !(rhs < lhs);
+    }
 
     // ----------
     // operator >
     // ----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer on the left side of >
+     * @param rhs an Integer on the right side of >
+     * @return bool to indicate whether the Integer on the left side is greater than that on the right side
+     * greater comparison operator for Integer
      */
-    friend bool operator > (const Integer& lhs, const Integer& rhs) {
-        return (rhs < lhs);}
+    friend bool operator > (const Integer& lhs, const Integer& rhs) 
+    {
+        return (rhs < lhs);
+    }
 
     // -----------
     // operator >=
     // -----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer on the left side of >=
+     * @param rhs an Integer on the right side of >=
+     * @return bool to indicate whether the Integer on the left side is greater or equal to that on the right side
+     * greater or equal comparison operator for Integer
      */
-    friend bool operator >= (const Integer& lhs, const Integer& rhs) {
-        return !(lhs < rhs);}
+    friend bool operator >= (const Integer& lhs, const Integer& rhs) 
+    {
+        return !(lhs < rhs);
+    }
 
     // ----------
     // operator +
     // ----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer as augend
+     * @param rhs an Integer as addend
+     * @return an Integer that is the sum of the two
+     * + operator for Integer
      */
-    friend Integer operator + (Integer lhs, const Integer& rhs) {
-        return lhs += rhs;}
+    friend Integer operator + (Integer lhs, const Integer& rhs) 
+    {
+        return lhs += rhs;
+    }
 
     // ----------
     // operator -
     // ----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer as minuend
+     * @param rhs an Integer as subtrahend
+     * @return an Integer that is difference
+     * - operator for Integer
      */
-    friend Integer operator - (Integer lhs, const Integer& rhs) {
-        return lhs -= rhs;}
+    friend Integer operator - (Integer lhs, const Integer& rhs) 
+    {
+        return lhs -= rhs;
+    }
 
     // ----------
     // operator *
     // ----------
 
     /**
-     * <your documentation>
+     * @param lhs an Integer as multiplicand
+     * @param rhs an Integer as multiplier
+     * @return an Integer that is the product of the two
+     * * operator for Integer
      */
-    friend Integer operator * (Integer lhs, const Integer& rhs) {
-        return lhs *= rhs;}
+    friend Integer operator * (Integer lhs, const Integer& rhs) 
+    {
+        return lhs *= rhs;
+    }
 
     // ----------
     // operator /
     // ----------
 
     /**
-     * <your documentation>
-     * @throws invalid_argument if (rhs == 0)
+     * @param lhs an Integer as dividend
+     * @param rhs an Integer as divider
+     * @return an Integer that is the result of the division
+     * @throw invalid_argument if (rhs == 0)
+     * / operator for Integer
      */
-    friend Integer operator / (Integer lhs, const Integer& rhs) {
-        return lhs /= rhs;}
+    friend Integer operator / (Integer lhs, const Integer& rhs) 
+    {
+        if(rhs == Integer(0))
+        {
+            throw invalid_argument("Integer::operator / (Integer,const Integer&)");
+        }
+        return lhs /= rhs;
+    }
 
     // ----------
     // operator %
     // ----------
 
     /**
-     * <your documentation>
-     * @throws invalid_argument if (rhs <= 0)
+     * @param lhs an Integer on the left side of %
+     * @param rhs an Integer on the right side of %
+     * @return an Integer that is the result of the modulo operation
+     * @throw invalid_argument if (rhs <= 0)
+     * % operator for Integer
      */
-    friend Integer operator % (Integer lhs, const Integer& rhs) {
-        return lhs %= rhs;}
+    friend Integer operator % (Integer lhs, const Integer& rhs) 
+    {
+        if(rhs <= Integer(0))
+        {
+            throw invalid_argument("Integer::operator % (Integer,const Integer&)");
+        }
+        return lhs %= rhs;
+    }
 
     // -----------
     // operator <<
     // -----------
 
     /**
-     * <your documentation>
-     * @throws invalid_argument if (rhs < 0)
+     * @param lhs an Integer gettubg left shifted
+     * @param rhs an int which is the number of digits to shift
+     * @return an Integer that is the result of left shift operation
+     * @throw invalid_argument if (rhs < 0)
+     * << operator for Integer
      */
-    friend Integer operator << (Integer lhs, int rhs) {
-        return lhs <<= rhs;}
+    friend Integer operator << (Integer lhs, int rhs) 
+    {
+        if(rhs < Integer(0))
+        {
+            throw invalid_argument("Integer::operator << (Integer, int)");
+        }
+        return lhs <<= rhs;
+    }
 
     // -----------
     // operator >>
     // -----------
 
     /**
-     * <your documentation>
-     * @throws invalid_argument if (rhs < 0)
+     * @param lhs an Integer gettubg right shifted
+     * @param rhs an int which is the number of digits to shift
+     * @return an Integer that is the result of right shift operation
+     * @throw invalid_argument if (rhs < 0)
+     * >> operator for Integer
      */
-    friend Integer operator >> (Integer lhs, int rhs) {
-        return lhs >>= rhs;}
+    friend Integer operator >> (Integer lhs, int rhs) 
+    {
+        if(rhs < Integer(0))
+        {
+            throw invalid_argument("Integer::operator >> (Integer, int)");
+        }
+        return lhs >>= rhs;
+    }
 
     // -----------
     // operator <<
     // -----------
 
     /**
-     * <your documentation>
+     * @param lhs an ostream
+     * @param rhs an Integer getting streamed
+     * @return an ostream with rhs streamed in
+     * << stream operator for Integer
      */
-    friend std::ostream& operator << (std::ostream& lhs, const Integer& rhs) {
-        // <your code>
-        return lhs << "0";}
+    friend std::ostream& operator << (std::ostream& lhs, const Integer& rhs) 
+    {
+
+        if(rhs.negative)
+        {
+             lhs << '-';
+        }
+        copy(rhs.begin_pos, rhs.end_pos, ostream_iterator<int>(lhs));
+
+        return lhs;
+    }
 
     // ---
     // abs
@@ -445,10 +561,13 @@ class Integer {
     /**
      * absolute value
      * does NOT modify the argument
-     * <your documentation>
+     * @param x an Integer
+     * @return an Integer that is the absolute value of x
      */
-    friend Integer abs (Integer x) {
-        return x.abs();}
+    friend Integer abs (Integer x) 
+    {
+        return x.abs();
+    }
 
     // ---
     // pow
@@ -457,28 +576,62 @@ class Integer {
     /**
      * power
      * does NOT modify the argument
-     * <your documentation>
-     * @throws invalid_argument if (x == 0) && (e == 0)
-     * @throws invalid_argument if (e < 0)
+     * @param x an Integer
+     * @param e an int which the the number of power x is getting raised to
+     * @return an Integer that is the result of the power operation
+     * @throw invalid_argument if (x == 0) && (e == 0)
+     * @throw invalid_argument if (e < 0)
      */
-    friend Integer pow (Integer x, int e) {
-        return x.pow(e);}
+    friend Integer pow (Integer x, int e) 
+    {
+        if((x == Integer(0)) || e <= 0)
+        {
+            throw invalid_argument("Integer::pow(Integer, int)");
+        }
+        return x.pow(e);
+    }
 
     private:
         // ----
         // data
         // ----
 
-        // <your data>
+        C digits; 
+        typename C::iterator end_pos;
+        typename C::iterator begin_pos;
+        bool negative;
 
     private:
+
         // -----
         // valid
         // -----
 
-        bool valid () const {
-            // <your code>
-            return true;}
+        bool valid () const 
+        {
+            return true;
+        }
+
+        // ---------------
+        // expand_capacity
+        // ---------------
+
+        //expand the capacity of the container (digits)
+        void expand_capacity(int increase_size)
+        {
+            expand_capacity(increase_size, digits);
+        }
+
+        //helper overloaded functions of expand_capacity for different underlied containers
+        void expand_capacity(int increase_size, vector<T>)
+        {
+            digits.reserve((digits.size() + increase_size) * 3);
+        }
+
+        void expand_capacity(int increase_size, deque<T>)
+        {
+            digits.resize((digits.size() + increase_size) * 3);
+        }
 
     public:
         // ------------
@@ -486,20 +639,72 @@ class Integer {
         // ------------
 
         /**
-         * <your documentation>
+         * @param value an integer as the value of the Integer
+         * constructor taking an integer
          */
-        Integer (int value) {
-            // <your code>
-            assert(valid());}
+        Integer (int value) 
+        {
+            if(value < 0)
+            {
+                negative = true;
+                value = -value;
+            }
+            else
+            {
+                negative = false;
+            }
+
+            for(auto elem: to_string(value))
+            {
+                digits.push_back(int(elem) - ZERO_ASCII_OFFSET);
+            }
+
+            begin_pos = digits.begin();
+            end_pos = digits.end();
+            assert(valid());
+        }
 
         /**
-         * <your documentation>
-         * @throws invalid_argument if value is not a valid representation of an Integer
+         * @param value a C++ string as the value of the Integer
+         * @throw invalid_argument if value is not a valid representation of an Integer
+         * constructor taking a string
          */
-        explicit Integer (const std::string& value) {
-            // <your code>
-            if (!valid())
-                throw std::invalid_argument("Integer::Integer()");}
+        explicit Integer (const string& value) 
+        {
+            try
+            {
+                int v = stoi(value);
+
+                if(v < 0)
+                {
+                    negative = true;
+                    v = -v;
+                }
+                else
+                {
+                    negative = false;
+                }
+
+                for(auto elem: to_string(v))
+                {
+                    digits.push_back(int(elem) - ZERO_ASCII_OFFSET);
+                }
+
+                end_pos = digits.end();
+            }
+            catch(invalid_argument e)
+            {
+                throw invalid_argument("Integer::Integer(const string&)");
+            }
+            catch(out_of_range e)
+            {
+                throw out_of_range("Integer::Integer(const string&)");
+            }
+            if(!valid())
+            {
+                throw invalid_argument("Integer::Integer(const string&)");
+            }
+        }
 
         // Default copy, destructor, and copy assignment.
         // Integer (const Integer&);
@@ -511,153 +716,332 @@ class Integer {
         // ----------
 
         /**
-         * <your documentation>
+         * @return the result of the negation
+         * negation operation for Integer
          */
-        Integer operator - () const {
-            // <your code>
-            return Integer(0);}
+        Integer operator - () const 
+        {
+            Integer result = *this;
+            result.negative = !result.negative;
+            return result;
+        }
 
         // -----------
         // operator ++
         // -----------
 
         /**
-         * <your documentation>
+         * @return the result of the incrementation (pre)
+         * pre incrementation operation for Integer
          */
-        Integer& operator ++ () {
+        Integer& operator ++ ()
+        {
             *this += 1;
-            return *this;}
+            return *this;
+        }
 
         /**
-         * <your documentation>
+         * @return the result of the incrementation (pos)
+         * pos incrementation operation for Integer
          */
-        Integer operator ++ (int) {
+        Integer operator ++ (int) 
+        {
             Integer x = *this;
             ++(*this);
-            return x;}
+            return x;
+        }
 
         // -----------
         // operator --
         // -----------
 
         /**
-         * <your documentation>
+         * @return the result of the decrementation (pre)
+         * pre decrementation operation for Integer
          */
-        Integer& operator -- () {
+        Integer& operator -- () 
+        {
             *this -= 1;
-            return *this;}
+            return *this;
+        }
 
         /**
-         * <your documentation>
+         * @return the result of the decrementation (pos)
+         * pos decrementation operation for Integer
          */
-        Integer operator -- (int) {
+        Integer operator -- (int) 
+        {
             Integer x = *this;
             --(*this);
-            return x;}
+            return x;
+        }
 
         // -----------
         // operator +=
         // -----------
 
         /**
-         * <your documentation>
+         * @param rhs an Integer as addend
+         * @return the result of the addition
+         * += operation for Integer
          */
-        Integer& operator += (const Integer& rhs) {
-            // <your code>
-            return *this;}
+        Integer& operator += (const Integer& rhs) 
+        {
+            if(digits.max_size() < (max(digits.size(), rhs.digits.size()) + 1))
+            {
+                expand_capacity(max(digits.size(), rhs.digits.size()) + 1);
+            }
+
+            if(negative != rhs.negative)
+            {
+                if(*this >= rhs)
+                {
+                    if(-rhs > *this)
+                    {
+                        negative = true;
+                        end_pos = minus_digits(rhs.begin_pos, rhs.end_pos, begin_pos, end_pos, begin_pos);
+                    }
+                    else
+                    {
+                        end_pos = minus_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+                    }
+                }
+                else
+                {
+                    if(-(*this) <= rhs)
+                    {
+                        negative = false;
+                        end_pos = minus_digits(rhs.begin_pos, rhs.end_pos, begin_pos, end_pos, begin_pos);
+                    }
+                    else
+                    {
+                        end_pos = minus_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+                    }
+                }
+                
+            }
+            else
+            {
+                end_pos = plus_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+            }
+            return *this;
+        }
 
         // -----------
         // operator -=
         // -----------
 
         /**
-         * <your documentation>
+         * @param rhs an Integer as subtrahend
+         * @return the result of the subtraction
+         * -= operation for Integer
          */
-        Integer& operator -= (const Integer& rhs) {
-            // <your code>
-            return *this;}
+        Integer& operator -= (const Integer& rhs) 
+        {
+
+            if(digits.max_size() < (max(digits.size(), rhs.digits.size()) + 1))
+            {
+                expand_capacity(max(digits.size(), rhs.digits.size()) + 1);
+            }
+
+            if(negative == rhs.negative)
+            {
+                if(negative)
+                {
+                    if(*this >= rhs)
+                    {
+                        negative = false;
+                        end_pos = minus_digits(rhs.begin_pos, rhs.end_pos, begin_pos, end_pos, begin_pos);
+                    }
+                    else
+                    {
+                        end_pos = minus_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+                    }
+                }
+                else
+                {
+                    if(*this >= rhs)
+                    {
+                        end_pos = minus_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+                    }
+                    else
+                    {
+                        negative = true;
+                        end_pos = minus_digits(rhs.begin_pos, rhs.end_pos, begin_pos, end_pos, begin_pos);
+                    }
+                }
+            }
+            else
+            {
+                end_pos = plus_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+            }
+            return *this;
+        }
 
         // -----------
         // operator *=
         // -----------
 
         /**
-         * <your documentation>
+         * @param rhs an Integer as multiplier
+         * @return the result of the multiplication
+         * *= operation for Integer
          */
-        Integer& operator *= (const Integer& rhs) {
-            // <your code>
-            return *this;}
+        Integer& operator *= (const Integer& rhs) 
+        {
+            if(digits.max_size() < (digits.size() + rhs.digits.size()))
+            {
+                expand_capacity(digits.size() + rhs.digits.size());
+            }
+
+            if(negative == rhs.negative)
+            {
+                negative = false;
+            }
+            else
+            {
+                negative = true;
+            }
+
+            end_pos = multiplies_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+
+            return *this;
+        }
 
         // -----------
         // operator /=
         // -----------
 
         /**
-         * <your documentation>
-         * @throws invalid_argument if (rhs == 0)
+         * @param rhs an Integer as divider
+         * @return the result of the division
+         * @throw invalid_argument if (rhs == 0)
+         * /= operation for Integer
          */
-        Integer& operator /= (const Integer& rhs) {
-            // <your code>
-            return *this;}
+        Integer& operator /= (const Integer& rhs) 
+        {
+            if(rhs == Integer(0))
+            {
+                throw invalid_argument("Integer::operator /= (const Integer&)");
+            }
+
+            if(negative == rhs.negative)
+            {
+                negative = false;
+            }
+            else
+            {
+                negative = true;
+            }
+
+            end_pos = divides_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
+
+            return *this;
+        }
 
         // -----------
         // operator %=
         // -----------
 
         /**
-         * <your documentation>
-         * @throws invalid_argument if (rhs <= 0)
+         * @param rhs an Integer as modulor
+         * @return the result of the modulo operation
+         * @throw invalid_argument if (rhs <= 0)
+         * %= operation for Integer
          */
-        Integer& operator %= (const Integer& rhs) {
-            // <your code>
-            return *this;}
+        Integer& operator %= (const Integer& rhs) 
+        {
+            if(rhs <= Integer(0))
+            {
+                throw invalid_argument("Integer::operator %= (const Integer&)");
+            }
+
+            Integer division_result = (*this) / rhs;
+            (*this) = (*this - (division_result * rhs));
+
+            return *this;
+        }
 
         // ------------
         // operator <<=
         // ------------
 
         /**
-         * <your documentation>
+         * @param n an int (the number of digits to shift)
+         * @return the result of the left shift operation
+         * @throw invalid_argument if (n < 0)
+         * <<= operation for Integer
          */
-        Integer& operator <<= (int n) {
-            // <your code>
-            return *this;}
+        Integer& operator <<= (int n) 
+        {
+            if(n < 0)
+            {
+                throw invalid_argument("Integer::operator <<= (int)");
+            }
+            end_pos = shift_left_digits(begin_pos, end_pos, n, begin_pos);
+            return *this;
+        }
 
         // ------------
         // operator >>=
         // ------------
 
         /**
-         * <your documentation>
+         * @param n an int (the number of digits to shift)
+         * @return the result of the right shift operation
+         * @throw invalid_argument if (n < 0)
+         * >>= operation for Integer
          */
-        Integer& operator >>= (int n) {
-            // <your code>
-            return *this;}
+        Integer& operator >>= (int n) 
+        {
+            if(n < 0)
+            {
+                throw invalid_argument("Integer::operator >>= (int)");
+            }
+            end_pos = right_left_digits(begin_pos, end_pos, n, begin_pos);
+            return *this;
+        }
 
         // ---
         // abs
         // ---
 
         /**
-         * absolute value
-         * <your documentation>
+         * absolute value operation
+         * @return the result of the absolute value
          */
-        Integer& abs () {
-            // <your code>
-            return *this;}
+        Integer& abs () 
+        {
+            negative = false;
+            return *this;
+        }
 
         // ---
         // pow
         // ---
 
         /**
-         * power
-         * <your documentation>
-         * @throws invalid_argument if (this == 0) && (e == 0)
-         * @throws invalid_argument if (e < 0)
+         * power operation
+         * @e an int as the number of power the Integer get raised to
+         * @throw invalid_argument if (this == 0) && (e == 0)
+         * @throw invalid_argument if (e < 0)
          */
-        Integer& pow (int e) {
-            // <your code>
-            return *this;}};
+        Integer& pow (int e) 
+        {
+            if((*this == Integer(0)) || e <= 0)
+            {
+                throw invalid_argument("Integer::pow(int)");
+            }
+
+            Integer temp = *this;
+
+            while(e-- != 0)
+            {
+                *this *= temp;
+            }
+
+            return *this;
+        }
+};
 
 #endif // Integer_h
