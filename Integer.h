@@ -221,6 +221,9 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template <typename II1, typename II2, typename OI>
 OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
+    cout << "initial status is : " << endl;
+    printtt(b1, e1);
+    printtt(b2, e2);
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
     vector<int> result(1);
@@ -229,10 +232,6 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     vector<int>::iterator multiplicand_end;
     result.reserve(II1_length + II2_length);
     multiplicand.reserve(II1_length + II2_length - 1);
-    cout << "--------------" << endl;
-    printtt(b1, e1);
-    printtt(b2, e2);
-    cout << "--------------" << endl;
     result_end = result.end();
     if(II1_length > II2_length)
     {
@@ -258,7 +257,8 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
                 }
             });
     }
-    cout << "YO!" << endl;
+    cout << "current result is : ";
+    printtt(result.begin(), result_end);
     return copy(result.begin(), result_end, x);    
 }
 
@@ -994,7 +994,7 @@ class Integer
             }
 
             end_pos = multiplies_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
-
+            cout << "now returning" << endl;
             return *this;
         }
 
@@ -1121,7 +1121,6 @@ class Integer
             }
 
             Integer temp = *this;
-
             while(e-- != 0)
             {
                 *this *= temp;
