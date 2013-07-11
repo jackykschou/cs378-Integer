@@ -33,6 +33,13 @@
 
 using namespace std;
 
+template <typename II>
+void printtt(II b, II e)
+{
+    copy(b, e, ostream_iterator<int>(cout, " "));
+    cout << endl;
+}
+
 // -----------------
 // shift_left_digits
 // -----------------
@@ -69,7 +76,15 @@ OI shift_left_digits (II b, II e, int n, OI x)
 template <typename II, typename OI>
 OI shift_right_digits (II b, II e, int n, OI x) 
 {
-     return copy_n(b, distance(b, e) - n, x);
+    if(n >= distance(b, e))
+    {
+        *x = 0;
+        return ++x;
+    }
+    else
+    {
+        return copy_n(b, distance(b, e) - n, x);
+    }
 }
 
 // -----------
@@ -155,15 +170,16 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 {
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
+
     vector<int> temp;
     temp.reserve(II1_length);
-
     copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(temp));
     advance(b1, II1_length - II2_length);
     transform(b1, e1, b2, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
         {
             return elem1 - elem2;
         });
+
     vector<int>::reverse_iterator rit = next(temp.rbegin());
     for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
         {
@@ -174,13 +190,16 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
             }
             ++rit;
         });
-    if(find(temp.cbegin(), temp.cend(), 0) == prev(temp.end()))
+
+
+    if(find_if(temp.cbegin(), temp.cend(), [](int elem) { return elem > 0;}) == temp.end())
     {
-        return x;
+        *x = 0;
+        return ++x;
     }
     else
     {
-        return copy(next(find(temp.cbegin(), temp.cend(), 0)), temp.cend(), x);
+        return copy(find_if(temp.cbegin(), temp.cend(), [](int elem){ return elem > 0;}), temp.cend(), x);
     }
 }
 
@@ -206,15 +225,18 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     int II2_length = distance(b2, e2);
     vector<int> result(1);
     vector<int> multiplicand;
-    vector<int>::iterator result_end = result.end();
+    vector<int>::iterator result_end;
     vector<int>::iterator multiplicand_end;
     result.reserve(II1_length + II2_length);
     multiplicand.reserve(II1_length + II2_length - 1);
-
+    cout << "--------------" << endl;
+    printtt(b1, e1);
+    printtt(b2, e2);
+    cout << "--------------" << endl;
+    result_end = result.end();
     if(II1_length > II2_length)
     {
-        result_end = copy(b1, e1, result.begin());
-        multiplicand_end =  copy(b1, e1, multiplicand.begin());
+        multiplicand_end = copy(b1, e1, multiplicand.begin());
         for_each(b2, e2, [&II2_length, &multiplicand, &multiplicand_end, &result_end, &result](int elem)
             {
                 vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II2_length, 0);
@@ -226,8 +248,7 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     }
     else
     {
-        result_end = copy(b2, e2, result.begin());
-        multiplicand_end =  copy(b1, e1, multiplicand.begin());
+        multiplicand_end = copy(b2, e2, multiplicand.begin());
         for_each(b1, e1, [&II1_length, &multiplicand, &multiplicand_end, &result_end, &result](int elem)
             {
                 vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II1_length, 0);
@@ -237,6 +258,7 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
                 }
             });
     }
+    cout << "YO!" << endl;
     return copy(result.begin(), result_end, x);    
 }
 
@@ -260,38 +282,44 @@ OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 {
     int dividend_len = distance(b1, e1);
     int divider_len = distance(b2, e2);
+    if(divider_len > dividend_len || *b1 == 0)
+    {
+        *x = 0;
+        return ++x;
+    }
     vector<int> result(1);
     vector<int> dividend(b1, e1);
     vector<int> divider(divider_len + dividend_len - divider_len);
     vector<int> result_adder(1 + dividend_len - divider_len);
-    vector<int>::iterator result_end = result.end();
-    vector<int>::iterator dividend_end = dividend.end();
-    vector<int>::iterator divider_end = divider.end();
-    vector<int>::iterator result_adder_end = result_adder.end();
+    vector<int>::iterator result_end;
+    vector<int>::iterator dividend_end;
+    vector<int>::iterator divider_end;
+    vector<int>::iterator result_adder_end;
     result.reserve(dividend_len);
 
     result_adder[0] = 1;
     divider_end = copy(b2, e2, divider.begin());
+    result_end = result.end();
+    dividend_end = dividend.end();
+    result_adder_end = result_adder.end();
 
     while(dividend_len - divider_len >= 2 || ((dividend_len - divider_len == 1) && (dividend.front() > divider.front())))
     {
-        divider_end = next(divider.begin(), distance(b2, e2) + dividend_len - divider_len + 1);
-        result_adder_end = next(result_adder.begin(), dividend_len - divider_len + 1);
+        divider_end = next(divider.begin(), distance(b2, e2) + dividend_len - divider_len - 1);
+        result_adder_end = next(result_adder.begin(), dividend_len - divider_len);
         dividend_end = minus_digits(dividend.begin(), dividend_end, divider.begin(), divider_end, dividend.begin());
         result_end = plus_digits(result.begin(), result_end, result_adder.begin(), result_adder_end, result.begin());
 
         dividend_len = distance(dividend.begin(), dividend_end);
         divider_len = distance(divider.begin(), divider_end);
     }
-
     result_adder_end = next(result_adder.begin());
-
-    while(lexicographical_compare(b2, e2, dividend.begin(), dividend_end) || ((distance(dividend.begin(), dividend_end) == distance(b2, e2)) && equal(dividend.begin(), dividend_end, b2)))
-    {
+    while((distance(dividend.begin(), dividend_end) > distance(b2, e2)) || 
+        ((lexicographical_compare(b2, e2, dividend.begin(), dividend_end) || equal(dividend.begin(), dividend_end, b2)) && (distance(dividend.begin(), dividend_end) == distance(b2, e2))))
+    {   
         dividend_end = minus_digits(dividend.begin(), dividend_end, b2, e2, dividend.begin());
         result_end = plus_digits(result.begin(), result_end, result_adder.begin(), result_adder_end, result.begin());
     }
-
     return copy(result.begin(), result_end, x);
 }
 
@@ -302,6 +330,7 @@ OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template < typename T, typename C = std::vector<T> >
 class Integer 
 {
+
     // -----------
     // operator ==
     // -----------
@@ -354,11 +383,33 @@ class Integer
         }
         else if(lhs.negative && rhs.negative)
         {
-            return lexicographical_compare(rhs.begin_pos, rhs.end_pos, lhs.begin_pos, lhs.end_pos);
+            if(distance(lhs.begin_pos, lhs.end_pos) > distance(rhs.begin_pos, rhs.end_pos))
+            {
+                return true;
+            }
+            else if(distance(lhs.begin_pos, lhs.end_pos) < distance(rhs.begin_pos, rhs.end_pos))
+            {
+                return false;
+            }
+            else
+            {
+                return lexicographical_compare(rhs.begin_pos, rhs.end_pos, lhs.begin_pos, lhs.end_pos);
+            }
         }
         else
         {
-            return lexicographical_compare(lhs.begin_pos, lhs.end_pos, rhs.begin_pos, rhs.end_pos);
+            if(distance(lhs.begin_pos, lhs.end_pos) > distance(rhs.begin_pos, rhs.end_pos))
+            {
+                return false;
+            }
+            else if(distance(lhs.begin_pos, lhs.end_pos) < distance(rhs.begin_pos, rhs.end_pos))
+            {
+                return true;
+            }
+            else
+            {
+                return lexicographical_compare(lhs.begin_pos, lhs.end_pos, rhs.begin_pos, rhs.end_pos);
+            }
         }
     }
 
@@ -639,6 +690,18 @@ class Integer
         // ------------
 
         /**
+         * default constructor
+         */
+
+         Integer ()
+         {
+            negative = false;
+            digits.push_back(0);
+            begin_pos = digits.begin();
+            end_pos = digits.end();
+         }
+
+        /**
          * @param value an integer as the value of the Integer
          * constructor taking an integer
          */
@@ -674,7 +737,6 @@ class Integer
             try
             {
                 int v = stoi(value);
-
                 if(v < 0)
                 {
                     negative = true;
@@ -690,6 +752,7 @@ class Integer
                     digits.push_back(int(elem) - ZERO_ASCII_OFFSET);
                 }
 
+                begin_pos = digits.begin();
                 end_pos = digits.end();
             }
             catch(invalid_argument e)
@@ -706,10 +769,37 @@ class Integer
             }
         }
 
-        // Default copy, destructor, and copy assignment.
-        // Integer (const Integer&);
+        /**
+         * @param other an Integer getting copied
+         * copy constructor
+         */
+        Integer (const Integer& other)
+        {
+            negative = other.negative;
+            digits = other.digits;
+            begin_pos = digits.begin();
+            end_pos = next(begin_pos, distance(other.begin_pos, other.end_pos));
+        }
+
+        // Default destructor
         // ~Integer ();
-        // Integer& operator = (const Integer&);
+
+        // ----------
+        // operator = (copy assignment)
+        // ----------
+
+        /**
+         * @param other an Integer getting assigned
+         * @return an Integer copy
+         * copy assignment operator
+         */
+        Integer& operator = (const Integer& other)
+        {
+            negative = other.negative;
+            digits = other.digits;
+            begin_pos = digits.begin();
+            end_pos = next(begin_pos, distance(other.begin_pos, other.end_pos));
+        }
 
         // ----------
         // operator -
@@ -955,10 +1045,7 @@ class Integer
             {
                 throw invalid_argument("Integer::operator %= (const Integer&)");
             }
-
-            Integer division_result = (*this) / rhs;
-            (*this) = (*this - (division_result * rhs));
-
+            *this = *this - ((*this / rhs) * rhs);
             return *this;
         }
 
@@ -998,7 +1085,7 @@ class Integer
             {
                 throw invalid_argument("Integer::operator >>= (int)");
             }
-            end_pos = right_left_digits(begin_pos, end_pos, n, begin_pos);
+            end_pos = shift_right_digits(begin_pos, end_pos, n, begin_pos);
             return *this;
         }
 
