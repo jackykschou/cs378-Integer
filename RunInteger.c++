@@ -53,8 +53,8 @@ int main () {
     }
 
     {
-    //const Integer< int, std::deque<int> > n = Integer< int, std::deque<int> >(2).pow(4423) - 1;
-    //cout << "2^4423 - 1 = " << n << endl << endl;
+    const Integer< int, std::deque<int> > n = Integer< int, std::deque<int> >(2).pow(4423) - 1;
+    cout << "2^4423 - 1 = " << n << endl << endl;
     }
 
     // --------------------------

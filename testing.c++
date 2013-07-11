@@ -5,11 +5,8 @@ using namespace std;
 
 int main()
 {
-	Integer<int> x("10");
-	Integer<int> y = 100;
-	Integer<int> z = 0;
-	z = (x * y);
-	x = x.pow(10);
-	cout << x << " " << y << " " << z << endl;
+	Integer<int> x("2");
+	Integer<int> y("123");
+	cout << x.pow(3000) << endl;
 	return 0;
 }

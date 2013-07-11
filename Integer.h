@@ -108,7 +108,7 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
     vector<int> temp(1);
-
+    
     if(II1_length > II2_length)
     {
         temp.reserve(II1_length + 1);
@@ -120,7 +120,7 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
             });
     }
     else
-    {
+    {   
         temp.reserve(II2_length + 1);
         copy_n(b2, II2_length - II1_length, back_insert_iterator<vector<int> >(temp));
         advance(b2, II2_length - II1_length);
@@ -129,6 +129,7 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
                 return elem1 + elem2;
             });
     }
+    
     vector<int>::reverse_iterator rit = next(temp.rbegin());
     for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
         {
@@ -143,11 +144,11 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     {
         return copy(temp.cbegin(), temp.cend(), x);
     }
+    
     else
     {
         return copy(next(temp.cbegin()), temp.cend(), x);
     }
-
 }
 
 // ------------
@@ -221,9 +222,6 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template <typename II1, typename II2, typename OI>
 OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
-    cout << "initial status is : " << endl;
-    printtt(b1, e1);
-    printtt(b2, e2);
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
     vector<int> result(1);
@@ -231,8 +229,8 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     vector<int>::iterator result_end;
     vector<int>::iterator multiplicand_end;
     result.reserve(II1_length + II2_length);
-    multiplicand.reserve(II1_length + II2_length - 1);
     result_end = result.end();
+    multiplicand.reserve(II1_length + II2_length - 1);
     if(II1_length > II2_length)
     {
         multiplicand_end = copy(b1, e1, multiplicand.begin());
@@ -257,8 +255,6 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
                 }
             });
     }
-    cout << "current result is : ";
-    printtt(result.begin(), result_end);
     return copy(result.begin(), result_end, x);    
 }
 
@@ -670,18 +666,10 @@ class Integer
         //expand the capacity of the container (digits)
         void expand_capacity(int increase_size)
         {
-            expand_capacity(increase_size, digits);
-        }
-
-        //helper overloaded functions of expand_capacity for different underlied containers
-        void expand_capacity(int increase_size, vector<T>)
-        {
-            digits.reserve((digits.size() + increase_size) * 3);
-        }
-
-        void expand_capacity(int increase_size, deque<T>)
-        {
+            int current_size = distance(begin_pos, end_pos);
             digits.resize((digits.size() + increase_size) * 3);
+            begin_pos = digits.begin();
+            end_pos = next(begin_pos, current_size);
         }
 
     public:
@@ -706,7 +694,7 @@ class Integer
          * constructor taking an integer
          */
         Integer (int value) 
-        {
+        {   
             if(value < 0)
             {
                 negative = true;
@@ -774,9 +762,9 @@ class Integer
          * copy constructor
          */
         Integer (const Integer& other)
-        {
+        {   
             negative = other.negative;
-            digits = other.digits;
+            copy(other.begin_pos, other.end_pos,back_inserter(digits));
             begin_pos = digits.begin();
             end_pos = next(begin_pos, distance(other.begin_pos, other.end_pos));
         }
@@ -794,10 +782,13 @@ class Integer
          * copy assignment operator
          */
         Integer& operator = (const Integer& other)
-        {
+        {   
             negative = other.negative;
-            digits = other.digits;
-            begin_pos = digits.begin();
+            if(distance(other.begin_pos, other.end_pos) > distance(begin_pos, end_pos))
+            {
+                expand_capacity(distance(other.begin_pos, other.end_pos));
+            }
+            copy(other.begin_pos, other.end_pos, digits.begin());
             end_pos = next(begin_pos, distance(other.begin_pos, other.end_pos));
         }
 
@@ -877,9 +868,9 @@ class Integer
          */
         Integer& operator += (const Integer& rhs) 
         {
-            if(digits.max_size() < (max(digits.size(), rhs.digits.size()) + 1))
-            {
-                expand_capacity(max(digits.size(), rhs.digits.size()) + 1);
+            if(digits.size() < (max(distance(begin_pos, end_pos), distance(rhs.begin_pos, rhs.end_pos)) + 1))
+            {   
+                expand_capacity(max(distance(begin_pos, end_pos), distance(rhs.begin_pos, rhs.end_pos)) + 1);
             }
 
             if(negative != rhs.negative)
@@ -929,7 +920,7 @@ class Integer
         Integer& operator -= (const Integer& rhs) 
         {
 
-            if(digits.max_size() < (max(digits.size(), rhs.digits.size()) + 1))
+            if(digits.size() < (unsigned int)(max(distance(begin_pos, end_pos), distance(rhs.begin_pos, rhs.end_pos)) + 1))
             {
                 expand_capacity(max(digits.size(), rhs.digits.size()) + 1);
             }
@@ -979,8 +970,8 @@ class Integer
          */
         Integer& operator *= (const Integer& rhs) 
         {
-            if(digits.max_size() < (digits.size() + rhs.digits.size()))
-            {
+            if(digits.size() < (unsigned int)(distance(begin_pos, end_pos) + distance(rhs.begin_pos, rhs.end_pos)))
+            {   
                 expand_capacity(digits.size() + rhs.digits.size());
             }
 
@@ -992,9 +983,7 @@ class Integer
             {
                 negative = true;
             }
-
             end_pos = multiplies_digits(begin_pos, end_pos, rhs.begin_pos, rhs.end_pos, begin_pos);
-            cout << "now returning" << endl;
             return *this;
         }
 
@@ -1119,13 +1108,12 @@ class Integer
             {
                 throw invalid_argument("Integer::pow(int)");
             }
-
             Integer temp = *this;
-            while(e-- != 0)
-            {
+
+            while(e-- != 1)
+            {  
                 *this *= temp;
             }
-
             return *this;
         }
 };
