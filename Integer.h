@@ -12,11 +12,7 @@
 #ifndef Integer_h
     #define Integer_h
 
-//#ifdef NDEBUG
-    //#define NDEBUG
-//#endif
-
-#define ZERO_ASCII_OFFSET 48
+#define ZERO_ASCII_OFFSET 48 //int represents '0' in ASCII
 
 // --------
 // includes
@@ -32,13 +28,6 @@
 #include <iterator>  //predefined iterator, iterator categories, iterator functions
 
 using namespace std;
-
-template <typename II>
-void printtt(II b, II e)
-{
-    copy(b, e, ostream_iterator<int>(cout, " "));
-    cout << endl;
-}
 
 // -----------------
 // shift_left_digits
@@ -76,6 +65,7 @@ OI shift_left_digits (II b, II e, int n, OI x)
 template <typename II, typename OI>
 OI shift_right_digits (II b, II e, int n, OI x) 
 {
+    //special case shift more than the avaliable number of digits, result is 0
     if(n >= distance(b, e))
     {
         *x = 0;
@@ -105,33 +95,41 @@ OI shift_right_digits (II b, II e, int n, OI x)
 template <typename II1, typename II2, typename OI>
 OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
+    //number of digits of the two numbers
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
-    vector<int> temp(1);
+
+    vector<int> result(1); //first digit is 0 to hold possible extra digit after addition
     
+    //get the digits that does not involved in the addition to the result holder first (the first n digits of the longer number, where n is the number of difference of number of digits between the two numbers)
     if(II1_length > II2_length)
     {
-        temp.reserve(II1_length + 1);
-        copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(temp));
-        advance(b1, II1_length - II2_length);
-        transform(b1, e1, b2, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
+        result.reserve(II1_length + 1);
+        copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(result));
+        advance(b1, II1_length - II2_length); //move the iterator to the begin position where addition happens
+
+        //perform addition
+        transform(b1, e1, b2, back_insert_iterator<vector<int> >(result), [](int elem1, int elem2)
             {
                 return elem1 + elem2;
             });
     }
     else
     {   
-        temp.reserve(II2_length + 1);
-        copy_n(b2, II2_length - II1_length, back_insert_iterator<vector<int> >(temp));
-        advance(b2, II2_length - II1_length);
-        transform(b2, e2, b1, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
+        result.reserve(II2_length + 1);
+        copy_n(b2, II2_length - II1_length, back_insert_iterator<vector<int> >(result));
+        advance(b2, II2_length - II1_length); //move the iterator to the begin position where addition happens
+
+        //perform addition
+        transform(b2, e2, b1, back_insert_iterator<vector<int> >(result), [](int elem1, int elem2)
             {
                 return elem1 + elem2;
             });
     }
     
-    vector<int>::reverse_iterator rit = next(temp.rbegin());
-    for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
+    //if the digit is larger than 10, increment the next digit by 1 and substracts itself by 10
+    vector<int>::reverse_iterator rit = next(result.rbegin());
+    for_each(result.rbegin(), result.rend(), [&rit](int& elem)
         {
             if(elem >= 10)
             {
@@ -140,14 +138,15 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
             }
             ++rit;
         });
-    if(temp[0] == 1)
+
+    if(result[0] == 1) //special case: extra digit is produced (for example 9 + 1 become 10)
     {
-        return copy(temp.cbegin(), temp.cend(), x);
+        return move(result.cbegin(), result.cend(), x);
     }
     
     else
     {
-        return copy(next(temp.cbegin()), temp.cend(), x);
+        return move(next(result.cbegin()), result.cend(), x);
     }
 }
 
@@ -169,20 +168,27 @@ OI plus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template <typename II1, typename II2, typename OI>
 OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
+    //number of digits of the two numbers
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
 
-    vector<int> temp;
-    temp.reserve(II1_length);
-    copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(temp));
+    vector<int> result;
+    result.reserve(II1_length);
+
+    //get the digits that does not involved in the subtraction to the result holder first (the first n digits of the first number, where n is the number of digits of first no. - number of digits of second no. (if positive))
+    copy_n(b1, II1_length - II2_length, back_insert_iterator<vector<int> >(result));
+    //move the iterator to the begin position where subtraction happens
     advance(b1, II1_length - II2_length);
-    transform(b1, e1, b2, back_insert_iterator<vector<int> >(temp), [](int elem1, int elem2)
+
+    //perform subtraction
+    transform(b1, e1, b2, back_insert_iterator<vector<int> >(result), [](int elem1, int elem2)
         {
             return elem1 - elem2;
         });
 
-    vector<int>::reverse_iterator rit = next(temp.rbegin());
-    for_each(temp.rbegin(), temp.rend(), [&rit](int& elem)
+    //if the digit is negative, decrease the next digit by 1 and increase itself by 10
+    vector<int>::reverse_iterator rit = next(result.rbegin());
+    for_each(result.rbegin(), result.rend(), [&rit](int& elem)
         {
             if(elem < 0)
             {
@@ -192,15 +198,15 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
             ++rit;
         });
 
-
-    if(find_if(temp.cbegin(), temp.cend(), [](int elem) { return elem > 0;}) == temp.end())
+    if(find_if(result.cbegin(), result.cend(), [](int elem) { return elem > 0;}) == result.end()) //special case: result is 0
     {
         *x = 0;
         return ++x;
     }
     else
     {
-        return copy(find_if(temp.cbegin(), temp.cend(), [](int elem){ return elem > 0;}), temp.cend(), x);
+        //get the first number that is not 0
+        return move(find_if(result.cbegin(), result.cend(), [](int elem){ return elem > 0;}), result.cend(), x);
     }
 }
 
@@ -222,21 +228,34 @@ OI minus_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template <typename II1, typename II2, typename OI>
 OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
+    //special case: multiply by 0
+    if(*b1 == 0 || *b2 == 0)
+    {
+        *x = 0;
+        return ++x;
+    }
+
+    //number of digits of the two numbers
     int II1_length = distance(b1, e1);
     int II2_length = distance(b2, e2);
-    vector<int> result(1);
+
+    vector<int> result(1); //initial result is 0
+
     vector<int> multiplicand;
     vector<int>::iterator result_end;
     vector<int>::iterator multiplicand_end;
     result.reserve(II1_length + II2_length);
     result_end = result.end();
     multiplicand.reserve(II1_length + II2_length - 1);
+
+    //get the shorter number as the multiplier
     if(II1_length > II2_length)
     {
+        //perform the muplication (for example: 321 * 8722 will decomposed to: 872200 + 872200 + 872200 + 87220 + 87220 + 8722)
         multiplicand_end = copy(b1, e1, multiplicand.begin());
         for_each(b2, e2, [&II2_length, &multiplicand, &multiplicand_end, &result_end, &result](int elem)
             {
-                vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II2_length, 0);
+                vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II2_length, 0); //shift to the current position of multiplication
                 while(elem-- != 0)
                 {
                     result_end = plus_digits(result.begin(), result_end, multiplicand.begin(), multiplicand_temp_end, result.begin());
@@ -245,17 +264,18 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     }
     else
     {
+        //perform the muplication (for example: 321 * 8722 will decomposed to: 872200 + 872200 + 872200 + 87220 + 87220 + 8722)
         multiplicand_end = copy(b2, e2, multiplicand.begin());
         for_each(b1, e1, [&II1_length, &multiplicand, &multiplicand_end, &result_end, &result](int elem)
             {
-                vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II1_length, 0);
+                vector<int>::iterator multiplicand_temp_end = fill_n(multiplicand_end, --II1_length, 0); //shift to the current position of multiplication
                 while(elem-- != 0)
                 {
                     result_end = plus_digits(result.begin(), result_end, multiplicand.begin(), multiplicand_temp_end, result.begin());
                 }
             });
     }
-    return copy(result.begin(), result_end, x);    
+    return move(result.begin(), result_end, x);    
 }
 
 // --------------
@@ -276,13 +296,17 @@ OI multiplies_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
 template <typename II1, typename II2, typename OI>
 OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x) 
 {
+    //number of digits of the two numbers
     int dividend_len = distance(b1, e1);
     int divider_len = distance(b2, e2);
+
+    //special case: dividend is zero or dividend is smaller than divider
     if(divider_len > dividend_len || *b1 == 0)
     {
         *x = 0;
         return ++x;
     }
+
     vector<int> result(1);
     vector<int> dividend(b1, e1);
     vector<int> divider(divider_len + dividend_len - divider_len);
@@ -299,6 +323,8 @@ OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
     dividend_end = dividend.end();
     result_adder_end = result_adder.end();
 
+    //shortcut case: if the dividend is larger than the divider by more than 100 times, we can immediately count 10 * difference between digits number times, or if the dividend is larger than the 
+    //divider by 10 times and the first digit of the dividend is larger, we can also immediately count 10 times
     while(dividend_len - divider_len >= 2 || ((dividend_len - divider_len == 1) && (dividend.front() > divider.front())))
     {
         divider_end = next(divider.begin(), distance(b2, e2) + dividend_len - divider_len - 1);
@@ -309,14 +335,19 @@ OI divides_digits (II1 b1, II1 e1, II2 b2, II2 e2, OI x)
         dividend_len = distance(dividend.begin(), dividend_end);
         divider_len = distance(divider.begin(), divider_end);
     }
+
+    //get the adder back to 1 to perform the counting
     result_adder_end = next(result_adder.begin());
+
+    //count by substraction
     while((distance(dividend.begin(), dividend_end) > distance(b2, e2)) || 
         ((lexicographical_compare(b2, e2, dividend.begin(), dividend_end) || equal(dividend.begin(), dividend_end, b2)) && (distance(dividend.begin(), dividend_end) == distance(b2, e2))))
     {   
         dividend_end = minus_digits(dividend.begin(), dividend_end, b2, e2, dividend.begin());
         result_end = plus_digits(result.begin(), result_end, result_adder.begin(), result_adder_end, result.begin());
     }
-    return copy(result.begin(), result_end, x);
+
+    return move(result.begin(), result_end, x);
 }
 
 // -------
@@ -512,7 +543,7 @@ class Integer
      */
     friend Integer operator / (Integer lhs, const Integer& rhs) 
     {
-        if(rhs == Integer(0))
+        if(*rhs.begin_pos == 0)
         {
             throw invalid_argument("Integer::operator / (Integer,const Integer&)");
         }
@@ -532,7 +563,7 @@ class Integer
      */
     friend Integer operator % (Integer lhs, const Integer& rhs) 
     {
-        if(rhs <= Integer(0))
+        if(*rhs.begin_pos <= 0)
         {
             throw invalid_argument("Integer::operator % (Integer,const Integer&)");
         }
@@ -552,7 +583,7 @@ class Integer
      */
     friend Integer operator << (Integer lhs, int rhs) 
     {
-        if(rhs < Integer(0))
+        if(rhs < 0)
         {
             throw invalid_argument("Integer::operator << (Integer, int)");
         }
@@ -572,7 +603,7 @@ class Integer
      */
     friend Integer operator >> (Integer lhs, int rhs) 
     {
-        if(rhs < Integer(0))
+        if(rhs < 0)
         {
             throw invalid_argument("Integer::operator >> (Integer, int)");
         }
@@ -631,7 +662,7 @@ class Integer
      */
     friend Integer pow (Integer x, int e) 
     {
-        if((x == Integer(0)) || e <= 0)
+        if((*x.begin_pos == 0) || e <= 0)
         {
             throw invalid_argument("Integer::pow(Integer, int)");
         }
@@ -643,9 +674,9 @@ class Integer
         // data
         // ----
 
-        C digits; 
-        typename C::iterator end_pos;
-        typename C::iterator begin_pos;
+        C digits; //container
+        typename C::iterator end_pos; //iterator to the begin of the Integer
+        typename C::iterator begin_pos; //iterator to the end of the Integer
         bool negative;
 
     private:
@@ -667,7 +698,10 @@ class Integer
         void expand_capacity(int increase_size)
         {
             int current_size = distance(begin_pos, end_pos);
+
             digits.resize((digits.size() + increase_size) * 3);
+
+            //reset the iterator as rellocation invalidates them
             begin_pos = digits.begin();
             end_pos = next(begin_pos, current_size);
         }
@@ -684,7 +718,7 @@ class Integer
          Integer ()
          {
             negative = false;
-            digits.push_back(0);
+            digits.push_back(0); //default value is 0
             begin_pos = digits.begin();
             end_pos = digits.end();
          }
@@ -707,6 +741,7 @@ class Integer
 
             for(auto elem: to_string(value))
             {
+                //convert the char to a digit by subracting the number representing '0'
                 digits.push_back(int(elem) - ZERO_ASCII_OFFSET);
             }
 
@@ -724,19 +759,26 @@ class Integer
         {
             try
             {
-                int v = stoi(value);
-                if(v < 0)
+                string temp;
+                if(value[0] == '-')
                 {
                     negative = true;
-                    v = -v;
+                    temp = value.substr(1, value.length() - 1); //get rid of the '-'
                 }
                 else
                 {
                     negative = false;
+                    temp = value;
                 }
 
-                for(auto elem: to_string(v))
+                for(auto elem: temp)
                 {
+                    //check if character is a digit
+                    if(((int)elem > '9') || ((int)elem < '0') )
+                    {
+                        throw invalid_argument("Integer::Integer(const string&)");
+                    }
+                    //convert the char to a digit by subracting the number representing '0'
                     digits.push_back(int(elem) - ZERO_ASCII_OFFSET);
                 }
 
@@ -749,7 +791,7 @@ class Integer
             }
             catch(out_of_range e)
             {
-                throw out_of_range("Integer::Integer(const string&)");
+                throw invalid_argument("Integer::Integer(const string&)");
             }
             if(!valid())
             {
@@ -784,12 +826,16 @@ class Integer
         Integer& operator = (const Integer& other)
         {   
             negative = other.negative;
+
+            //rellocate if necessary
             if(distance(other.begin_pos, other.end_pos) > distance(begin_pos, end_pos))
             {
                 expand_capacity(distance(other.begin_pos, other.end_pos));
             }
+
             copy(other.begin_pos, other.end_pos, digits.begin());
             end_pos = next(begin_pos, distance(other.begin_pos, other.end_pos));
+            return *this;
         }
 
         // ----------
@@ -802,8 +848,12 @@ class Integer
          */
         Integer operator - () const 
         {
+
             Integer result = *this;
-            result.negative = !result.negative;
+            if(*result.begin_pos != 0) //if zero, don't change
+            {
+                result.negative = !result.negative;
+            }
             return result;
         }
 
@@ -868,7 +918,7 @@ class Integer
          */
         Integer& operator += (const Integer& rhs) 
         {
-            if(digits.size() < (max(distance(begin_pos, end_pos), distance(rhs.begin_pos, rhs.end_pos)) + 1))
+            if(digits.size() < (unsigned int)(max(distance(begin_pos, end_pos), distance(rhs.begin_pos, rhs.end_pos)) + 1))
             {   
                 expand_capacity(max(distance(begin_pos, end_pos), distance(rhs.begin_pos, rhs.end_pos)) + 1);
             }
@@ -970,6 +1020,15 @@ class Integer
          */
         Integer& operator *= (const Integer& rhs) 
         {
+            //special case: result is 0
+            if((*rhs.begin_pos == 0) || (*begin_pos == 0))
+            {
+                negative = false;
+                *begin_pos = 0;
+                end_pos = next(begin_pos);
+                return *this;
+            }
+
             if(digits.size() < (unsigned int)(distance(begin_pos, end_pos) + distance(rhs.begin_pos, rhs.end_pos)))
             {   
                 expand_capacity(digits.size() + rhs.digits.size());
@@ -999,9 +1058,18 @@ class Integer
          */
         Integer& operator /= (const Integer& rhs) 
         {
-            if(rhs == Integer(0))
+            if(*rhs.begin_pos == 0)
             {
                 throw invalid_argument("Integer::operator /= (const Integer&)");
+            }
+
+            //special case: result is 0
+            if(*begin_pos == 0)
+            {
+                negative = false;
+                *begin_pos = 0;
+                end_pos = next(begin_pos);
+                return *this;
             }
 
             if(negative == rhs.negative)
@@ -1030,7 +1098,7 @@ class Integer
          */
         Integer& operator %= (const Integer& rhs) 
         {
-            if(rhs <= Integer(0))
+            if(*rhs.begin_pos <= 0)
             {
                 throw invalid_argument("Integer::operator %= (const Integer&)");
             }
@@ -1104,7 +1172,7 @@ class Integer
          */
         Integer& pow (int e) 
         {
-            if((*this == Integer(0)) || e <= 0)
+            if((*begin_pos == 0) || e <= 0)
             {
                 throw invalid_argument("Integer::pow(int)");
             }
